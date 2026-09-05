@@ -34,6 +34,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -41,7 +42,6 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String YOUTUBE_API_KEY = "AIzaSyCa7rzV2uEuIPFEZcAwxJBQ6sYySB-2fzk";
     private final List<YouTubeVideo> currentResults = new ArrayList<>();
     private YouTubeVideoAdapter listAdapter;
 
@@ -131,80 +131,167 @@ public class MainActivity extends AppCompatActivity {
 
     private List<YouTubeVideo> fetchYouTubeVideos(String query) throws Exception {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.name());
-        String searchUrl = "https://www.googleapis.com/youtube/v3/search"
-                + "?part=snippet"
-                + "&type=video"
-                + "&maxResults=30"
-                + "&q=" + encodedQuery
-                + "&key=" + YOUTUBE_API_KEY;
+        String searchUrl = "https://www.youtube.com/results?search_query=" + encodedQuery + "&hl=en";
+        String searchHtml = readUrl(searchUrl);
+        return extractVideoResultsFromSearchHtml(searchHtml);
+    }
 
-        String searchResponse = readUrl(searchUrl);
-        JSONObject searchJson = new JSONObject(searchResponse);
-        JSONArray searchItems = searchJson.optJSONArray("items");
-        if (searchItems == null || searchItems.length() == 0) {
-            return new ArrayList<>();
-        }
-
-        List<String> videoIds = new ArrayList<>();
-        for (int i = 0; i < searchItems.length(); i++) {
-            JSONObject item = searchItems.optJSONObject(i);
-            if (item == null) {
-                continue;
-            }
-            JSONObject idObject = item.optJSONObject("id");
-            if (idObject == null) {
-                continue;
-            }
-            String videoId = idObject.optString("videoId");
-            if (!TextUtils.isEmpty(videoId)) {
-                videoIds.add(videoId);
-            }
-        }
-
-        if (videoIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        String idsParam = TextUtils.join(",", videoIds);
-        String detailsUrl = "https://www.googleapis.com/youtube/v3/videos"
-                + "?part=snippet,contentDetails,status"
-                + "&id=" + URLEncoder.encode(idsParam, StandardCharsets.UTF_8.name())
-                + "&key=" + YOUTUBE_API_KEY;
-
-        String detailsResponse = readUrl(detailsUrl);
-        JSONObject detailsJson = new JSONObject(detailsResponse);
-        JSONArray detailsItems = detailsJson.optJSONArray("items");
-
+    private List<YouTubeVideo> extractVideoResultsFromSearchHtml(String html) {
         List<YouTubeVideo> videos = new ArrayList<>();
-        if (detailsItems == null) {
-            return videos;
-        }
+        LinkedHashSet<String> seenVideoIds = new LinkedHashSet<>();
+        String marker = "\"videoRenderer\"";
+        int searchStart = 0;
 
-        for (int i = 0; i < detailsItems.length(); i++) {
-            JSONObject videoObject = detailsItems.optJSONObject(i);
-            if (videoObject == null) {
+        while (searchStart < html.length()) {
+            int rendererIndex = html.indexOf(marker, searchStart);
+            if (rendererIndex < 0) {
+                break;
+            }
+
+            int objectStart = html.indexOf('{', rendererIndex + marker.length());
+            if (objectStart < 0) {
+                break;
+            }
+
+            int objectEnd = findMatchingBrace(html, objectStart);
+            if (objectEnd < 0) {
+                break;
+            }
+
+            String rendererBlock = html.substring(objectStart, objectEnd + 1);
+            if (rendererBlock.contains("shorts") || rendererBlock.contains("reelItemRenderer") || rendererBlock.contains("shortsVideoRenderer")) {
+                searchStart = objectEnd + 1;
                 continue;
             }
 
-            String videoId = videoObject.optString("id");
-            JSONObject snippet = videoObject.optJSONObject("snippet");
-            JSONObject contentDetails = videoObject.optJSONObject("contentDetails");
-            JSONObject status = videoObject.optJSONObject("status");
-
-            if (TextUtils.isEmpty(videoId) || snippet == null || contentDetails == null || !isEmbeddable(status)) {
+            Matcher videoIdMatcher = Pattern.compile("\"videoId\"\\s*:\\s*\"([A-Za-z0-9_-]{11})\"").matcher(rendererBlock);
+            if (!videoIdMatcher.find()) {
+                searchStart = objectEnd + 1;
                 continue;
             }
 
-            String title = snippet.optString("title", "");
-            String description = snippet.optString("description", "");
-            String durationIso = contentDetails.optString("duration", "PT0S");
-            long durationMs = parseIsoDurationToMs(durationIso);
-            String thumbnailUrl = extractThumbnailUrl(snippet);
+            String videoId = videoIdMatcher.group(1);
+            if (!seenVideoIds.add(videoId)) {
+                searchStart = objectEnd + 1;
+                continue;
+            }
 
-            videos.add(new YouTubeVideo(videoId, title, description, durationMs, thumbnailUrl));
+            String title = extractJsonStringValue(rendererBlock, "\"title\"", "\"text\"");
+            String thumbnailUrl = extractJsonStringValue(rendererBlock, "\"thumbnail\"", "\"url\"");
+            String durationText = extractJsonStringValue(rendererBlock, "\"lengthText\"", "\"simpleText\"");
+            long durationMs = parseDurationTextToMs(durationText);
+
+            if (TextUtils.isEmpty(title) || TextUtils.isEmpty(thumbnailUrl) || durationMs <= 0) {
+                searchStart = objectEnd + 1;
+                continue;
+            }
+
+            if (durationMs < 60000L) {
+                searchStart = objectEnd + 1;
+                continue;
+            }
+
+            videos.add(new YouTubeVideo(videoId, title, "", durationMs, thumbnailUrl));
+            searchStart = objectEnd + 1;
         }
 
         return videos;
+    }
+
+    private int findMatchingBrace(String text, int openBraceIndex) {
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = openBraceIndex; i < text.length(); i++) {
+            char current = text.charAt(i);
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (current == '\\') {
+                    escaped = true;
+                } else if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+
+            if (current == '"') {
+                inString = true;
+            } else if (current == '{') {
+                depth++;
+            } else if (current == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    private String extractJsonStringValue(String json, String parentKey, String childKey) {
+        int parentIndex = json.indexOf(parentKey);
+        if (parentIndex < 0) {
+            return "";
+        }
+        int childIndex = json.indexOf(childKey, parentIndex);
+        if (childIndex < 0) {
+            return "";
+        }
+        int valueStart = json.indexOf('"', childIndex + childKey.length());
+        if (valueStart < 0) {
+            return "";
+        }
+        int valueEnd = valueStart + 1;
+        boolean escaped = false;
+        StringBuilder value = new StringBuilder();
+        while (valueEnd < json.length()) {
+            char current = json.charAt(valueEnd);
+            if (escaped) {
+                value.append(current);
+                escaped = false;
+            } else if (current == '\\') {
+                escaped = true;
+            } else if (current == '"') {
+                break;
+            } else {
+                value.append(current);
+            }
+            valueEnd++;
+        }
+        return decodeJsonString(value.toString());
+    }
+
+    private String decodeJsonString(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return "";
+        }
+        return value.replace("\\u0026", "&")
+                .replace("\\/", "/")
+                .replace("\\\"", "\"")
+                .replace("\\n", " ");
+    }
+
+    private long parseDurationTextToMs(String durationText) {
+        if (TextUtils.isEmpty(durationText) || "LIVE".equalsIgnoreCase(durationText)) {
+            return 0L;
+        }
+
+        String normalized = durationText.trim();
+        String[] parts = normalized.split(":");
+        long totalMs = 0L;
+        try {
+            if (parts.length == 2) {
+                totalMs = (Long.parseLong(parts[0]) * 60L + Long.parseLong(parts[1])) * 1000L;
+            } else if (parts.length == 3) {
+                totalMs = (Long.parseLong(parts[0]) * 3600L + Long.parseLong(parts[1]) * 60L + Long.parseLong(parts[2])) * 1000L;
+            }
+        } catch (NumberFormatException ignored) {
+            return 0L;
+        }
+        return totalMs;
     }
 
     private void updateSearchResults(List<YouTubeVideo> videos) {
@@ -252,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(15000);
-            applyAndroidApiHeaders(connection);
+            applyHttpHeaders(connection);
 
             int code = connection.getResponseCode();
             InputStream inputStream;
@@ -287,12 +374,61 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void applyAndroidApiHeaders(HttpURLConnection connection) {
-        connection.setRequestProperty("X-Android-Package", getPackageName());
-        String certSha1 = getSigningCertSha1();
-        if (!TextUtils.isEmpty(certSha1)) {
-            connection.setRequestProperty("X-Android-Cert", certSha1);
+    private String postJson(String urlString, String body) throws Exception {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
+            connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+            connection.setRequestProperty("Referer", "https://www.youtube.com/");
+            connection.setRequestProperty("X-YouTube-Client-Name", "1");
+            connection.setRequestProperty("X-YouTube-Client-Version", "2.20240903.01.00");
+
+            byte[] payload = body.getBytes(StandardCharsets.UTF_8);
+            connection.setFixedLengthStreamingMode(payload.length);
+            connection.getOutputStream().write(payload);
+
+            int code = connection.getResponseCode();
+            InputStream inputStream = (code >= 200 && code < 300)
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+
+            if (inputStream == null) {
+                throw new JSONException("YouTube response is empty");
+            }
+
+            StringBuilder responseBuilder = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                responseBuilder.append(line);
+            }
+            reader.close();
+
+            if (code < 200 || code >= 300) {
+                String reason = extractYouTubeErrorReason(responseBuilder.toString());
+                throw new JSONException("YouTube API error (" + code + "): " + reason);
+            }
+
+            return responseBuilder.toString();
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
+    }
+
+    private void applyHttpHeaders(HttpURLConnection connection) {
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
+        connection.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        connection.setRequestProperty("Referer", "https://www.youtube.com/");
     }
 
     private String getSigningCertSha1() {
