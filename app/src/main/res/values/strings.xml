@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">HIKaraoke</string>
+    <string name="search_hint">Search song or artist</string>
+    <string name="search_button">Search YouTube</string>
+    <string name="search_results_label">Use + to add a video to queue</string>
+    <string name="searching">Searching...</string>
+    <string name="empty_results">No karaoke videos found.</string>
+    <string name="firebase_saved">Added to queue.</string>
+    <string name="firebase_save_error">Failed to save.</string>
+    <string name="video_thumbnail">Video Thumbnail</string>
+    <string name="add_to_queue">Add to queue</string>
+    <string name="queue_label">Queued</string>
+    <plurals name="queue_label_with_count">
+        <item quantity="one">Queued (%1$d Song)</item>
+        <item quantity="other">Queued (%1$d Songs)</item>
+    </plurals>
+    <string name="queue_remove_title">Remove song</string>
+    <string name="queue_remove_message">Remove "%1$s" from queue?</string>
+    <string name="queue_remove_confirm">Remove</string>
+    <string name="queue_removed">Song removed from queue.</string>
+    <string name="queue_remove_error">Unable to remove this queue item.</string>
+    <string name="queue_remove_error_with_reason">Failed to remove item: %1$s</string>
+    <string name="queue_clear_all">Clear All</string>
+    <string name="queue_clear_all_title">Clear Queue</string>
+    <string name="queue_clear_all_message">Remove all songs from queue?</string>
+    <string name="queue_clear_all_confirm">Clear</string>
+    <string name="queue_cleared">Queue cleared.</string>
+    <string name="back_to_home">Back to home</string>
+    <string name="choose_app_mode">Choose app mode</string>
+    <string name="mode_mobile">Mobile</string>
+    <string name="mode_tv">TV</string>
+</resources>

@@ -1,0 +1,18 @@
+{
+  "videoQueue": {
+    "0": {
+      "videoId": "dQw4w9WgXcQ",
+      "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+      "description": "The official video for “Never Gonna Give You Up” by Rick Astley",
+      "duration": 213000,
+      "thumbnailUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg"
+    },
+    "1": {
+      "videoId": "l482T0yNkeo",
+      "title": "AC/DC - Highway to Hell (Official Video)",
+      "description": "Official Music Video for \"Highway to Hell\" by AC/DC",
+      "duration": 208000,
+      "thumbnailUrl": "https://i.ytimg.com/vi/l482T0yNkeo/mqdefault.jpg"
+    }
+  }
+}

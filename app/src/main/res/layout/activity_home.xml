@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:paddingTop="60dp"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="16dp">
+
+    <ImageButton
+        android:id="@+id/searchButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="start"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/search_button"
+        android:padding="10dp"
+        android:src="@android:drawable/ic_menu_search"
+        app:tint="?attr/colorPrimary" />
+
+    <ImageView
+        android:id="@+id/appLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="65dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/logo" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/queueLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/queue_label"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/clearAllButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/queue_clear_all"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:textStyle="italic" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/loadingQueue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <ListView
+        android:id="@+id/queueList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
+

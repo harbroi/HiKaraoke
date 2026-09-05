@@ -1,0 +1,23 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.HIKaraoke" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorPrimaryVariant">@color/purple_500</item>
+        <item name="colorOnPrimary">#FF381E72</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_200</item>
+        <item name="colorOnSecondary">#FF332D41</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorOnSurface">@color/on_surface_dark</item>
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="colorOnBackground">@color/on_background_dark</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:navigationBarColor">@color/surface_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <!-- Customize your theme here. -->
+    </style>
+</resources>

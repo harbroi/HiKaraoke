@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "547993256794",
+    "firebase_url": "https://hikaraoke-4aaf7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "hikaraoke-4aaf7",
+    "storage_bucket": "hikaraoke-4aaf7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:547993256794:android:e120f806ebbcd3cfa3e963",
+        "android_client_info": {
+          "package_name": "net.harbroi.hikaraoke"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZPeMCXCiT8Sf_uRVKC3BCbnmghPs31Mk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
