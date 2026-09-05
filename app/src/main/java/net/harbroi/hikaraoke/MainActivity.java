@@ -191,11 +191,35 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
 
+            if (!isEmbeddableVideo(videoId)) {
+                searchStart = objectEnd + 1;
+                continue;
+            }
+
             videos.add(new YouTubeVideo(videoId, title, "", durationMs, thumbnailUrl));
             searchStart = objectEnd + 1;
         }
 
         return videos;
+    }
+
+    private boolean isEmbeddableVideo(String videoId) {
+        try {
+            String noembedUrl = "https://noembed.com/embed"
+                    + "?format=json"
+                    + "&url=" + URLEncoder.encode("https://www.youtube.com/watch?v=" + videoId, StandardCharsets.UTF_8.name());
+            String response = readUrl(noembedUrl);
+            JSONObject json = new JSONObject(response);
+            if (json.has("error")) {
+                return false;
+            }
+            String title = json.optString("title", "");
+            String thumbnailUrl = json.optString("thumbnail_url", "");
+            String html = json.optString("html", "");
+            return !TextUtils.isEmpty(title) && !TextUtils.isEmpty(thumbnailUrl) && !TextUtils.isEmpty(html);
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private int findMatchingBrace(String text, int openBraceIndex) {
