@@ -13,7 +13,20 @@
           "package_name": "net.harbroi.hikaraoke"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "547993256794-i003pd8auelspiqdki2pcletfqs9de8i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "net.harbroi.hikaraoke",
+            "certificate_hash": "8fbd7809f993dc771c121f93ec82cddded48977d"
+          }
+        },
+        {
+          "client_id": "547993256794-25ilq3l57td8j5gc41nqf115kr703ljc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCZPeMCXCiT8Sf_uRVKC3BCbnmghPs31Mk"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "547993256794-25ilq3l57td8j5gc41nqf115kr703ljc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

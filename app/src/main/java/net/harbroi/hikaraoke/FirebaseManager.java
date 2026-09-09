@@ -2,6 +2,8 @@ package net.harbroi.hikaraoke;
 
 import androidx.annotation.NonNull;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -15,13 +17,13 @@ import java.util.Comparator;
 import java.util.List;
 
 public class FirebaseManager {
+    private static final String USERS_PATH = "users";
     private static final String QUEUE_PATH = "videoQueue";
     private static FirebaseManager instance;
-    private final DatabaseReference queueRef;
+    private final FirebaseDatabase database;
 
     private FirebaseManager() {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        queueRef = database.getReference(QUEUE_PATH);
+        database = FirebaseDatabase.getInstance();
     }
 
     public static synchronized FirebaseManager getInstance() {
@@ -32,6 +34,13 @@ public class FirebaseManager {
     }
 
     public void addVideoToQueue(VideoQueueItem item, CompletionListener listener) {
+        DatabaseReference queueRef = getUserQueueRef();
+        if (queueRef == null) {
+            if (listener != null) {
+                listener.onComplete(DatabaseError.fromException(new IllegalStateException("User not signed in")), false);
+            }
+            return;
+        }
         queueRef.runTransaction(new Transaction.Handler() {
             @NonNull
             @Override
@@ -61,6 +70,13 @@ public class FirebaseManager {
     }
 
     public void removeVideoFromQueue(String firebaseKey, CompletionListener listener) {
+        DatabaseReference queueRef = getUserQueueRef();
+        if (queueRef == null) {
+            if (listener != null) {
+                listener.onComplete(DatabaseError.fromException(new IllegalStateException("User not signed in")), false);
+            }
+            return;
+        }
         queueRef.runTransaction(new Transaction.Handler() {
             @NonNull
             @Override
@@ -111,6 +127,13 @@ public class FirebaseManager {
     }
 
     public void clearQueue(CompletionListener listener) {
+        DatabaseReference queueRef = getUserQueueRef();
+        if (queueRef == null) {
+            if (listener != null) {
+                listener.onComplete(DatabaseError.fromException(new IllegalStateException("User not signed in")), false);
+            }
+            return;
+        }
         queueRef.setValue(null, (error, ref) -> {
             if (listener != null) {
                 listener.onComplete(error, error == null);
@@ -119,11 +142,28 @@ public class FirebaseManager {
     }
 
     public void observeQueue(ValueEventListener listener) {
+        DatabaseReference queueRef = getUserQueueRef();
+        if (queueRef == null) {
+            listener.onCancelled(DatabaseError.fromException(new IllegalStateException("User not signed in")));
+            return;
+        }
         queueRef.addValueEventListener(listener);
     }
 
     public void removeObserver(ValueEventListener listener) {
+        DatabaseReference queueRef = getUserQueueRef();
+        if (queueRef == null) {
+            return;
+        }
         queueRef.removeEventListener(listener);
+    }
+
+    private DatabaseReference getUserQueueRef() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            return null;
+        }
+        return database.getReference(USERS_PATH).child(currentUser.getUid()).child(QUEUE_PATH);
     }
 
     public interface CompletionListener {

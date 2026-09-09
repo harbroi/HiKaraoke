@@ -29,4 +29,9 @@
     <string name="choose_app_mode">Choose app mode</string>
     <string name="mode_mobile">Mobile</string>
     <string name="mode_tv">TV</string>
+    <string name="login_title">Sign in to continue</string>
+    <string name="login_google">Sign in with Google</string>
+    <string name="google_sign_in_failed">Google sign-in failed.</string>
+    <string name="google_sign_in_failed_with_reason">Google sign-in failed: %1$s</string>
+    <string name="sign_out">Sign out</string>
 </resources>

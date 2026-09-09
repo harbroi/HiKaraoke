@@ -19,14 +19,18 @@
         android:theme="@style/Theme.HIKaraoke">
 
         <activity
-            android:name=".ModeChooserActivity"
-            android:exported="true"
-            android:noHistory="true">
+            android:name=".LoginActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ModeChooserActivity"
+            android:exported="true"
+            android:noHistory="true" />
 
         <activity
             android:name=".HomeActivity"
