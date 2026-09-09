@@ -14,7 +14,6 @@
         android:id="@+id/searchButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_gravity="start"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/search_button"
         android:padding="10dp"
@@ -76,4 +75,3 @@
         android:layout_weight="1" />
 
 </LinearLayout>
-
