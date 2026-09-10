@@ -102,4 +102,3 @@ public class YouTubeVideoAdapter extends ArrayAdapter<YouTubeVideoAdapter.VideoI
         ImageView addToQueueButton;
     }
 }
-

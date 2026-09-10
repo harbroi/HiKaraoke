@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Transaction;
@@ -56,18 +57,18 @@ public class MainActivity extends AppCompatActivity {
 
         queryInput = findViewById(R.id.queryInput);
         queryInput.requestFocus();
-        ImageButton backButton = findViewById(R.id.backButton);
         ImageButton searchButton = findViewById(R.id.searchButton);
         ListView resultsList = findViewById(R.id.resultsList);
         loadingIndicator = findViewById(R.id.loadingIndicator);
         statusText = findViewById(R.id.statusText);
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
 
         List<YouTubeVideoAdapter.VideoItemData> adapterItems = new ArrayList<>();
         listAdapter = new YouTubeVideoAdapter(this, adapterItems, this::addVideoItemToFirebaseQueue);
         resultsList.setAdapter(listAdapter);
 
-        backButton.setOnClickListener(v -> navigateToHome());
         searchButton.setOnClickListener(v -> searchVideos());
+        NavigationHelper.setupBottomNavigation(this, bottomNavigation, R.id.navigation_search);
         queryInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                 searchVideos();
@@ -97,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
     private void searchVideos() {
         String userQuery = queryInput.getText().toString().trim();
         if (TextUtils.isEmpty(userQuery)) {
-            queryInput.setError("Enter a search term");
+            queryInput.setError(getString(R.string.enter_search_term));
             return;
         }
 
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception exception) {
                 runOnUiThread(() -> {
                     setLoading(false, getString(R.string.search_results_label));
-                    Toast.makeText(this, "Search failed: " + exception.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, getString(R.string.search_failed_with_reason, exception.getMessage()), Toast.LENGTH_LONG).show();
                 });
             }
         }).start();

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_200">#FFD0BCFF</color>
-    <color name="purple_500">#FF6750A4</color>
-    <color name="purple_700">#FF4F378B</color>
+    <color name="purple_500">#FF2F80ED</color>
+    <color name="purple_700">#FF1B5FC1</color>
     <color name="teal_200">#FFCCC2DC</color>
     <color name="teal_700">#FF625B71</color>
     <color name="surface_light">#FFFFFBFE</color>
@@ -22,4 +22,15 @@
     <color name="logo_cyan">#FF34D9FF</color>
     <color name="logo_magenta">#FFFF4DB8</color>
     <color name="logo_purple">#FF8A5CFF</color>
+    <color name="accent_blue">#FF2F80ED</color>
+    <color name="accent_blue_dark">#FF1B5FC1</color>
+    <color name="accent_blue_light">#FFEAF4FF</color>
+    <color name="page_background">#FFF4F7FB</color>
+    <color name="bottom_nav_background">#FF0B1733</color>
+    <color name="muted_text">#FF7A8494</color>
+    <color name="divider_light">#FFD7DEE8</color>
+    <color name="item_shadow_surface">#F2FFFFFF</color>
+    <color name="mockup_yellow">#FF163B75</color>
+    <color name="mockup_progress_track">#FFD8D8D8</color>
+    <color name="mockup_accent">#FF4DA3FF</color>
 </resources>

@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
@@ -26,6 +27,7 @@ public class HomeActivity extends AppCompatActivity {
     private YouTubeVideoAdapter listAdapter;
     private ProgressBar loadingQueue;
     private TextView queueLabel;
+    private ValueEventListener queueListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +39,7 @@ public class HomeActivity extends AppCompatActivity {
         ListView queueList = findViewById(R.id.queueList);
         loadingQueue = findViewById(R.id.loadingQueue);
         queueLabel = findViewById(R.id.queueLabel);
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
 
         List<YouTubeVideoAdapter.VideoItemData> adapterItems = new ArrayList<>();
         listAdapter = new YouTubeVideoAdapter(this, adapterItems);
@@ -44,6 +47,7 @@ public class HomeActivity extends AppCompatActivity {
 
         searchButton.setOnClickListener(v -> navigateToSearch());
         clearAllButton.setOnClickListener(v -> showClearAllDialog());
+        NavigationHelper.setupBottomNavigation(this, bottomNavigation, R.id.navigation_main);
         queueList.setOnItemLongClickListener((parent, view, position, id) -> {
             YouTubeVideoAdapter.VideoItemData item = listAdapter.getItem(position);
             if (item == null || item.firebaseKey == null || item.firebaseKey.isEmpty()) {
@@ -59,12 +63,14 @@ public class HomeActivity extends AppCompatActivity {
 
     private void navigateToSearch() {
         Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
+        finish();
     }
 
     private void loadQueueFromFirebase() {
         setLoadingQueue(true);
-        FirebaseManager.getInstance().observeQueue(new ValueEventListener() {
+        queueListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 List<YouTubeVideoAdapter.VideoItemData> items = new ArrayList<>();
@@ -104,7 +110,17 @@ public class HomeActivity extends AppCompatActivity {
                 setLoadingQueue(false);
                 Toast.makeText(HomeActivity.this, "Failed to load queue: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        });
+        };
+        FirebaseManager.getInstance().observeQueue(queueListener);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (queueListener != null) {
+            FirebaseManager.getInstance().removeObserver(queueListener);
+            queueListener = null;
+        }
     }
 
     private void showRemoveDialog(YouTubeVideoAdapter.VideoItemData item) {

@@ -34,4 +34,14 @@
     <string name="google_sign_in_failed">Google sign-in failed.</string>
     <string name="google_sign_in_failed_with_reason">Google sign-in failed: %1$s</string>
     <string name="sign_out">Sign out</string>
+    <string name="main_tab">Main</string>
+    <string name="search_tab">Search</string>
+    <string name="account_tab">Account</string>
+    <string name="account_title">Account</string>
+    <string name="account_signed_in_as">Signed in as</string>
+    <string name="account_user_fallback">Unknown user</string>
+    <string name="account_name_content_description">Current user name</string>
+    <string name="enter_search_term">Enter a search term</string>
+    <string name="search_failed_with_reason">Search failed: %1$s</string>
+    <string name="queue_remove_hint">Long press the video to remove</string>
 </resources>
