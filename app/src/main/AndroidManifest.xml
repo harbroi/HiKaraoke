@@ -41,6 +41,10 @@
             android:exported="true" />
 
         <activity
+            android:name=".AccountActivity"
+            android:exported="true" />
+
+        <activity
             android:name="net.harbroi.hikaraoketv.MainActivity"
             android:exported="false" />
 
