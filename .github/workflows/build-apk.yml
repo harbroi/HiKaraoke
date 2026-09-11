@@ -61,6 +61,13 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Require release signing secrets
+        if: steps.signing.outputs.available != 'true'
+        shell: bash
+        run: |
+          echo "Release signing secrets are required to build an installable release APK." >&2
+          exit 1
+
       - name: Decode release keystore
         if: steps.signing.outputs.available == 'true'
         shell: bash
@@ -72,12 +79,7 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build release APK (unsigned)
-        if: steps.signing.outputs.available != 'true'
-        run: ./gradlew assembleRelease
-
-      - name: Build release APK (signed)
-        if: steps.signing.outputs.available == 'true'
+      - name: Build release APK
         env:
           ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_FILE: ${{ runner.temp }}/hikaraoke-release.jks
           ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
