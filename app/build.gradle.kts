@@ -1,3 +1,5 @@
+import java.util.Locale
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -38,6 +40,21 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val versionName = variant.outputs.single().versionName.orNull ?: "0.0"
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(
+                String.format(
+                    Locale.US,
+                    "HIKaraoke_v%s.apk",
+                    versionName
+                )
+            )
+        }
     }
 }
 
