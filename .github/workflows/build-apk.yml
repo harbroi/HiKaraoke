@@ -1,11 +1,11 @@
 name: Build APK
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-      - master
-  pull_request:
+    types:
+      - closed
 
 permissions:
   contents: write
@@ -58,7 +58,7 @@ jobs:
           path: app/build/outputs/apk/debug/${{ steps.app_version.outputs.apk_name }}
 
       - name: Create or update release
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: github.event.pull_request.merged == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
