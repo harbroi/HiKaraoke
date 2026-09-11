@@ -45,8 +45,23 @@ jobs:
           echo "tag_name=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "apk_name=HIKaraoke_v$VERSION_NAME.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Check signing secrets
+        id: signing
+        shell: bash
+        env:
+          HIKARAOKE_RELEASE_KEYSTORE_BASE64: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 }}
+          HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
+          HIKARAOKE_RELEASE_KEY_ALIAS: ${{ secrets.HIKARAOKE_RELEASE_KEY_ALIAS }}
+          HIKARAOKE_RELEASE_KEY_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$HIKARAOKE_RELEASE_KEYSTORE_BASE64" ] && [ -n "$HIKARAOKE_RELEASE_STORE_PASSWORD" ] && [ -n "$HIKARAOKE_RELEASE_KEY_ALIAS" ] && [ -n "$HIKARAOKE_RELEASE_KEY_PASSWORD" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Decode release keystore
-        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '' }}
+        if: steps.signing.outputs.available == 'true'
         shell: bash
         env:
           HIKARAOKE_RELEASE_KEYSTORE_BASE64: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 }}
@@ -57,11 +72,11 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build release APK (unsigned)
-        if: ${{ !(secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '') }}
+        if: steps.signing.outputs.available != 'true'
         run: ./gradlew assembleRelease
 
       - name: Build release APK (signed)
-        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '' }}
+        if: steps.signing.outputs.available == 'true'
         env:
           ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_FILE: ${{ runner.temp }}/hikaraoke-release.jks
           ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
