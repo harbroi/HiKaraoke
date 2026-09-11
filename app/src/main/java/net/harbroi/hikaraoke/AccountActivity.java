@@ -22,12 +22,34 @@ public class AccountActivity extends AppCompatActivity {
         setContentView(R.layout.activity_account);
 
         TextView userNameText = findViewById(R.id.userNameText);
+        TextView accessCodeText = findViewById(R.id.accessCodeText);
+        TextView appInfoText = findViewById(R.id.appInfoText);
         TextView signOutButton = findViewById(R.id.signOutButton);
         BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
 
         userNameText.setText(getCurrentUserName());
+        appInfoText.setText(getString(R.string.account_app_info_value, getString(R.string.app_name), getAppVersionName(), "harbroi"));
+        FirebaseManager.getInstance().loadCurrentUserAccessCode((accessCode, errorMessage) -> {
+            if (errorMessage != null) {
+                accessCodeText.setText(getString(R.string.account_access_code_error));
+                return;
+            }
+            if (accessCode == null || accessCode.isEmpty()) {
+                accessCodeText.setText(getString(R.string.account_access_code_error));
+                return;
+            }
+            accessCodeText.setText(getString(R.string.account_access_code_value, accessCode));
+        });
         signOutButton.setOnClickListener(v -> signOut());
         NavigationHelper.setupBottomNavigation(this, bottomNavigation, R.id.navigation_account);
+    }
+
+    private String getAppVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 
     private String getCurrentUserName() {

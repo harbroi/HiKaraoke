@@ -41,6 +41,9 @@
     <string name="account_signed_in_as">Signed in as</string>
     <string name="account_user_fallback">Unknown user</string>
     <string name="account_name_content_description">Current user name</string>
+    <string name="account_access_code_value">TV Code: %1$s</string>
+    <string name="account_access_code_error">TV code unavailable</string>
+    <string name="account_app_info_value">App: %1$s\nVersion: %2$s\nDeveloper: %3$s</string>
     <string name="enter_search_term">Enter a search term</string>
     <string name="search_failed_with_reason">Search failed: %1$s</string>
     <string name="queue_remove_hint">Long press the video to remove</string>
