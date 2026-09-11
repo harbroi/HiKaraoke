@@ -33,6 +33,7 @@ public class VideoPlayerWebViewActivity extends AppCompatActivity {
 
     private static final String TAG = "VideoPlayerActivity";
     private static final String EXTRA_QUEUE_INDEX = "queue_index";
+    private static final String EXTRA_USER_UID = "user_uid";
 
     private FrameLayout rootContainer;
     private YouTubePlayerView youTubePlayerView;
@@ -76,7 +77,8 @@ public class VideoPlayerWebViewActivity extends AppCompatActivity {
         createOverlayViews();
         try {
             initializePlayer();
-            videoRepository = new FirebaseVideoRepository(this);
+            String userUid = getIntent() != null ? getIntent().getStringExtra(EXTRA_USER_UID) : null;
+            videoRepository = new FirebaseVideoRepository(this, userUid);
         } catch (RuntimeException e) {
             Log.e(TAG, "Failed to initialize video player", e);
             Toast.makeText(this,
@@ -195,6 +197,25 @@ public class VideoPlayerWebViewActivity extends AppCompatActivity {
     }
 
     private void loadVideosFromFirebase() {
+        String userUid = getIntent() != null ? getIntent().getStringExtra(EXTRA_USER_UID) : null;
+        if (userUid != null && !userUid.trim().isEmpty()) {
+            videoRepository.observeVideoQueueForUser(userUid, new FirebaseVideoRepository.VideoQueueCallback() {
+                @Override
+                public void onVideosLoaded(List<VideoItem> videos) {
+                    applyPlayableQueueFromFirebase(videos);
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "Firebase observe error: " + errorMessage);
+                    Toast.makeText(VideoPlayerWebViewActivity.this,
+                            "Failed to observe queue: " + errorMessage,
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+            return;
+        }
+
         videoRepository.observeVideoQueue(new FirebaseVideoRepository.VideoQueueCallback() {
             @Override
             public void onVideosLoaded(List<VideoItem> videos) {

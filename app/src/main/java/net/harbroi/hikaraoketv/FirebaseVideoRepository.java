@@ -3,6 +3,7 @@ package net.harbroi.hikaraoketv;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import net.harbroi.hikaraoke.R;
 
@@ -22,6 +23,7 @@ public class FirebaseVideoRepository {
     private final FirebaseDatabase database;
     private final List<VideoItem> videoQueue = new ArrayList<>();
     private ValueEventListener liveQueueListener;
+    private final String userUid;
 
     public interface VideoQueueCallback {
         void onVideosLoaded(List<VideoItem> videos);
@@ -29,14 +31,23 @@ public class FirebaseVideoRepository {
     }
 
     public FirebaseVideoRepository(@NonNull Context context) {
+        this(context, null);
+    }
+
+    public FirebaseVideoRepository(@NonNull Context context, @Nullable String userUid) {
         String databaseUrl = context.getString(R.string.firebase_database_url);
         this.database = FirebaseDatabase.getInstance(databaseUrl);
+        this.userUid = userUid;
     }
 
     public void observeVideoQueue(@NonNull final VideoQueueCallback callback) {
-        DatabaseReference videoQueueRef = getCurrentUserQueueRef();
+        observeVideoQueueForUser(getActiveUserUid(), callback);
+    }
+
+    public void observeVideoQueueForUser(@Nullable String targetUserUid, @NonNull final VideoQueueCallback callback) {
+        DatabaseReference videoQueueRef = getQueueRef(targetUserUid);
         if (videoQueueRef == null) {
-            callback.onError("User is not signed in");
+            callback.onError("User is not signed in or code did not resolve to a valid user.");
             return;
         }
         stopObservingVideoQueue();
@@ -64,7 +75,7 @@ public class FirebaseVideoRepository {
     }
 
     public void stopObservingVideoQueue() {
-        DatabaseReference videoQueueRef = getCurrentUserQueueRef();
+        DatabaseReference videoQueueRef = getQueueRef(getActiveUserUid());
         if (videoQueueRef != null && liveQueueListener != null) {
             videoQueueRef.removeEventListener(liveQueueListener);
             liveQueueListener = null;
@@ -72,9 +83,13 @@ public class FirebaseVideoRepository {
     }
 
     public void loadVideoQueue(@NonNull final VideoQueueCallback callback) {
-        DatabaseReference videoQueueRef = getCurrentUserQueueRef();
+        loadVideoQueueForUser(getActiveUserUid(), callback);
+    }
+
+    public void loadVideoQueueForUser(@Nullable String targetUserUid, @NonNull final VideoQueueCallback callback) {
+        DatabaseReference videoQueueRef = getQueueRef(targetUserUid);
         if (videoQueueRef == null) {
-            callback.onError("User is not signed in");
+            callback.onError("User is not signed in or code did not resolve to a valid user.");
             return;
         }
         videoQueueRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -99,11 +114,23 @@ public class FirebaseVideoRepository {
         });
     }
 
-    private DatabaseReference getCurrentUserQueueRef() {
+    @Nullable
+    private String getActiveUserUid() {
+        if (userUid != null && !userUid.trim().isEmpty()) {
+            return userUid;
+        }
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             return null;
         }
-        return database.getReference("users").child(currentUser.getUid()).child("videoQueue");
+        return currentUser.getUid();
+    }
+
+    @Nullable
+    private DatabaseReference getQueueRef(@Nullable String targetUserUid) {
+        if (targetUserUid == null || targetUserUid.trim().isEmpty()) {
+            return null;
+        }
+        return database.getReference("users").child(targetUserUid).child("videoQueue");
     }
 }

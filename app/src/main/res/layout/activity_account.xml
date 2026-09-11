@@ -65,6 +65,21 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/accessCodeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_rounded_outline"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="12dp"
+            android:textColor="@color/mockup_yellow"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/signOutButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -81,6 +96,19 @@
             android:text="@string/sign_out"
             android:textColor="@color/on_surface_light"
             android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/appInfoText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:paddingStart="8dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            android:textColor="@color/muted_text"
+            android:textSize="14sp" />
     </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

@@ -65,7 +65,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         if (firebaseAuth.getCurrentUser() != null) {
-            openModeChooser();
+            openHome();
         }
     }
 
@@ -87,12 +87,12 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(this, getString(R.string.google_sign_in_failed_with_reason, reason), Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    openModeChooser();
+                    openHome();
                 });
     }
 
-    private void openModeChooser() {
-        Intent intent = new Intent(this, ModeChooserActivity.class);
+    private void openHome() {
+        Intent intent = new Intent(this, HomeActivity.class);
         startActivity(intent);
         finish();
     }

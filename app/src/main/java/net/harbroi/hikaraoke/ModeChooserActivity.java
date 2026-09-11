@@ -2,8 +2,9 @@ package net.harbroi.hikaraoke;
 
 import android.app.UiModeManager;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.widget.TextView;
 
@@ -23,17 +24,25 @@ public class ModeChooserActivity extends AppCompatActivity {
 
         if (isTvDevice()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            openMode(net.harbroi.hikaraoketv.MainActivity.class);
+            return;
         }
 
         setContentView(R.layout.activity_mode_chooser);
 
         MaterialButton mobileButton = findViewById(R.id.mobileModeButton);
         MaterialButton tvButton = findViewById(R.id.tvModeButton);
-        TextView signOutButton = findViewById(R.id.signOutButton);
 
-        mobileButton.setOnClickListener(v -> openMode(HomeActivity.class));
+        mobileButton.setOnClickListener(v -> openMobileMode());
         tvButton.setOnClickListener(v -> openMode(net.harbroi.hikaraoketv.MainActivity.class));
-        signOutButton.setOnClickListener(v -> signOut());
+    }
+
+    private void openMobileMode() {
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            openMode(HomeActivity.class);
+            return;
+        }
+        openMode(LoginActivity.class);
     }
 
     private void openMode(Class<?> target) {
@@ -58,7 +67,15 @@ public class ModeChooserActivity extends AppCompatActivity {
 
     private boolean isTvDevice() {
         UiModeManager uiModeManager = (UiModeManager) getSystemService(UiModeManager.class);
-        return uiModeManager != null
+        boolean uiModeTv = uiModeManager != null
                 && uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION;
+
+        PackageManager packageManager = getPackageManager();
+        boolean televisionFeature = packageManager != null
+                && packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION);
+        boolean leanbackFeature = packageManager != null
+                && packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+
+        return uiModeTv || televisionFeature || leanbackFeature;
     }
 }
