@@ -51,7 +51,7 @@
     <string name="update_available">Update available: %1$s</string>
     <string name="update_download_started">Downloading the latest APK...</string>
     <string name="update_download_failed">Failed to start APK download.</string>
-    <string name="update_no_apk_asset">Latest workflow run does not include a downloadable APK artifact.</string>
+    <string name="update_no_apk_asset">Latest release does not include a downloadable APK asset.</string>
     <string name="enter_search_term">Enter a search term</string>
     <string name="search_failed_with_reason">Search failed: %1$s</string>
     <string name="queue_remove_hint">Long press the video to remove</string>
