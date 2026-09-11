@@ -3,6 +3,9 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import com.android.build.api.variant.BuiltArtifactsLoader
+import java.util.Locale
+
 android {
     namespace = "net.harbroi.hikaraoke"
     compileSdk {
@@ -38,6 +41,21 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val versionName = variant.outputs.single().versionName.orNull ?: "0.0"
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(
+                String.format(
+                    Locale.US,
+                    "HIKaraoke_v%s.apk",
+                    versionName
+                )
+            )
+        }
     }
 }
 

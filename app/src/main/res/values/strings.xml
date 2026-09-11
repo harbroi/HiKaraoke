@@ -44,6 +44,14 @@
     <string name="account_access_code_value">TV Code: %1$s</string>
     <string name="account_access_code_error">TV code unavailable</string>
     <string name="account_app_info_value">App: %1$s\nVersion: %2$s\nDeveloper: %3$s</string>
+    <string name="check_updates">Check Updates</string>
+    <string name="checking_updates">Checking for updates...</string>
+    <string name="update_check_failed">Failed to check updates: %1$s</string>
+    <string name="update_not_available">You already have the latest version.</string>
+    <string name="update_available">Update available: %1$s</string>
+    <string name="update_download_started">Downloading the latest APK...</string>
+    <string name="update_download_failed">Failed to start APK download.</string>
+    <string name="update_no_apk_asset">Latest workflow run does not include a downloadable APK artifact.</string>
     <string name="enter_search_term">Enter a search term</string>
     <string name="search_failed_with_reason">Search failed: %1$s</string>
     <string name="queue_remove_hint">Long press the video to remove</string>
