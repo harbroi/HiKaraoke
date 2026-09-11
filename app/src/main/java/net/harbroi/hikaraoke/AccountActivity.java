@@ -33,7 +33,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class AccountActivity extends AppCompatActivity {
-    private static final String LATEST_WORKFLOW_RUN_URL = "https://api.github.com/repos/harbroi/HiKaraoke/actions/workflows/build-apk.yml/runs?status=success&per_page=1";
+    private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/harbroi/HiKaraoke/releases/latest";
     private MaterialButton checkUpdatesButton;
 
     @Override
@@ -107,7 +107,7 @@ public class AccountActivity extends AppCompatActivity {
         setUpdateButtonEnabled(false, getString(R.string.checking_updates));
         new Thread(() -> {
             try {
-                ReleaseInfo releaseInfo = fetchLatestBuild();
+                ReleaseInfo releaseInfo = fetchLatestRelease();
                 long installedVersionCode = getInstalledVersionCode();
                 if (releaseInfo.versionCode <= installedVersionCode) {
                     runOnUiThread(() -> {
@@ -168,54 +168,36 @@ public class AccountActivity extends AppCompatActivity {
         }
     }
 
-    private ReleaseInfo fetchLatestBuild() throws Exception {
-        JSONObject runJson = fetchJsonObject(LATEST_WORKFLOW_RUN_URL);
-        JSONArray workflowRuns = runJson.optJSONArray("workflow_runs");
-        if (workflowRuns == null || workflowRuns.length() == 0) {
-            throw new IllegalStateException("No successful APK workflow runs found.");
+    private ReleaseInfo fetchLatestRelease() throws Exception {
+        JSONObject releaseJson = fetchJsonObject(LATEST_RELEASE_URL);
+        String tagName = releaseJson.optString("tag_name", "").trim();
+        long versionCode = parseVersionCodeFromRelease(releaseJson, tagName);
+        if (versionCode < 0L) {
+            throw new IllegalStateException("Latest release is missing a valid version code.");
         }
 
-        JSONObject latestRun = workflowRuns.optJSONObject(0);
-        if (latestRun == null) {
-            throw new IllegalStateException("Invalid workflow run response.");
-        }
-
-        long runNumber = latestRun.optLong("run_number", -1L);
-        if (runNumber < 0L) {
-            throw new IllegalStateException("Workflow run number is missing.");
-        }
-
-        String artifactsUrl = latestRun.optString("artifacts_url", "").trim();
-        if (artifactsUrl.isEmpty()) {
-            throw new IllegalStateException("Workflow artifacts URL is missing.");
-        }
-
-        JSONObject artifactsJson = fetchJsonObject(artifactsUrl);
-        JSONArray artifacts = artifactsJson.optJSONArray("artifacts");
-        if (artifacts == null || artifacts.length() == 0) {
-            throw new IllegalStateException("No APK artifact found in the latest workflow run.");
-        }
-
-        String artifactDownloadUrl = null;
-        for (int i = 0; i < artifacts.length(); i++) {
-            JSONObject artifact = artifacts.optJSONObject(i);
-            if (artifact == null) {
-                continue;
-            }
-            String artifactName = artifact.optString("name", "");
-            boolean isExpired = artifact.optBoolean("expired", false);
-            String archiveDownloadUrl = artifact.optString("archive_download_url", "");
-            if (!isExpired && "app-debug-apk".equals(artifactName) && !archiveDownloadUrl.isEmpty()) {
-                artifactDownloadUrl = archiveDownloadUrl;
-                break;
+        JSONArray assets = releaseJson.optJSONArray("assets");
+        String apkUrl = null;
+        if (assets != null) {
+            for (int i = 0; i < assets.length(); i++) {
+                JSONObject asset = assets.optJSONObject(i);
+                if (asset == null) {
+                    continue;
+                }
+                String assetName = asset.optString("name", "");
+                String browserDownloadUrl = asset.optString("browser_download_url", "");
+                if (assetName.toLowerCase().endsWith(".apk") && !TextUtils.isEmpty(browserDownloadUrl)) {
+                    apkUrl = browserDownloadUrl;
+                    break;
+                }
             }
         }
 
-        if (artifactDownloadUrl == null) {
-            throw new IllegalStateException("No downloadable APK artifact found in the latest workflow run.");
+        String versionName = releaseJson.optString("name", "").trim();
+        if (versionName.isEmpty()) {
+            versionName = tagName;
         }
-
-        return new ReleaseInfo(runNumber, "build-" + runNumber, artifactDownloadUrl);
+        return new ReleaseInfo(versionCode, versionName, apkUrl);
     }
 
     private JSONObject fetchJsonObject(String urlString) throws Exception {
@@ -275,6 +257,39 @@ public class AccountActivity extends AppCompatActivity {
             return packageInfo.getLongVersionCode();
         }
         return packageInfo.versionCode;
+    }
+
+    private long parseVersionCodeFromRelease(JSONObject releaseJson, String tagName) {
+        String body = releaseJson.optString("body", "");
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("versionCode\\s+([0-9]+)")
+                .matcher(body);
+        if (matcher.find()) {
+            try {
+                return Long.parseLong(matcher.group(1));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        if (TextUtils.isEmpty(tagName)) {
+            return -1L;
+        }
+        String normalized = tagName.startsWith("v") || tagName.startsWith("V")
+                ? tagName.substring(1)
+                : tagName;
+        String[] parts = normalized.split("\\.");
+        long computed = 0L;
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                return -1L;
+            }
+            try {
+                computed = (computed * 100L) + Long.parseLong(part);
+            } catch (NumberFormatException exception) {
+                return -1L;
+            }
+        }
+        return computed;
     }
 
     private String sanitizeFileName(String value) {
