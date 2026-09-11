@@ -45,17 +45,33 @@ jobs:
           echo "tag_name=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "apk_name=HIKaraoke_v$VERSION_NAME.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Decode release keystore
+        shell: bash
+        env:
+          HIKARAOKE_RELEASE_KEYSTORE_BASE64: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$HIKARAOKE_RELEASE_KEYSTORE_BASE64" ]; then
+            echo "Missing HIKARAOKE_RELEASE_KEYSTORE_BASE64 secret" >&2
+            exit 1
+          fi
+          echo "$HIKARAOKE_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hikaraoke-release.jks"
+
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
+      - name: Build release APK
+        env:
+          HIKARAOKE_RELEASE_STORE_FILE: ${{ runner.temp }}/hikaraoke-release.jks
+          HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
+          HIKARAOKE_RELEASE_KEY_ALIAS: ${{ secrets.HIKARAOKE_RELEASE_KEY_ALIAS }}
+          HIKARAOKE_RELEASE_KEY_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/${{ steps.app_version.outputs.apk_name }}
+          name: app-release-apk
+          path: app/build/outputs/apk/release/${{ steps.app_version.outputs.apk_name }}
 
       - name: Create or update release
         if: github.event.pull_request.merged == true
@@ -68,6 +84,6 @@ jobs:
           git tag "${{ steps.app_version.outputs.tag_name }}" "${GITHUB_SHA}"
           git push origin "${{ steps.app_version.outputs.tag_name }}"
           gh release create "${{ steps.app_version.outputs.tag_name }}" \
-            "app/build/outputs/apk/debug/${{ steps.app_version.outputs.apk_name }}" \
+            "app/build/outputs/apk/release/${{ steps.app_version.outputs.apk_name }}" \
             --title "HIKaraoke v${{ steps.app_version.outputs.version_name }}" \
             --notes "Automated release for version ${{ steps.app_version.outputs.version_name }} (versionCode ${{ steps.app_version.outputs.version_code }})."
