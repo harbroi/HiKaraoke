@@ -46,14 +46,11 @@ jobs:
           echo "apk_name=HIKaraoke_v$VERSION_NAME.apk" >> "$GITHUB_OUTPUT"
 
       - name: Decode release keystore
+        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' }}
         shell: bash
         env:
           HIKARAOKE_RELEASE_KEYSTORE_BASE64: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$HIKARAOKE_RELEASE_KEYSTORE_BASE64" ]; then
-            echo "Missing HIKARAOKE_RELEASE_KEYSTORE_BASE64 secret" >&2
-            exit 1
-          fi
           echo "$HIKARAOKE_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/hikaraoke-release.jks"
 
       - name: Make Gradle wrapper executable
