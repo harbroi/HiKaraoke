@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import org.json.JSONArray;
@@ -115,11 +116,12 @@ public class AppUpdateManager {
             }
         };
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            appContext.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            appContext.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        }
+        ContextCompat.registerReceiver(
+                appContext,
+                receiver,
+                new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+        );
     }
 
     private void triggerApkInstall(Context context, String apkFileName) {
