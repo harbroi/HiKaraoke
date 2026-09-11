@@ -46,7 +46,7 @@ jobs:
           echo "apk_name=HIKaraoke_v$VERSION_NAME.apk" >> "$GITHUB_OUTPUT"
 
       - name: Decode release keystore
-        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '' }}
         shell: bash
         env:
           HIKARAOKE_RELEASE_KEYSTORE_BASE64: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 }}
@@ -56,12 +56,17 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build release APK
+      - name: Build release APK (unsigned)
+        if: ${{ !(secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '') }}
+        run: ./gradlew assembleRelease
+
+      - name: Build release APK (signed)
+        if: ${{ secrets.HIKARAOKE_RELEASE_KEYSTORE_BASE64 != '' && secrets.HIKARAOKE_RELEASE_STORE_PASSWORD != '' && secrets.HIKARAOKE_RELEASE_KEY_ALIAS != '' && secrets.HIKARAOKE_RELEASE_KEY_PASSWORD != '' }}
         env:
-          HIKARAOKE_RELEASE_STORE_FILE: ${{ runner.temp }}/hikaraoke-release.jks
-          HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
-          HIKARAOKE_RELEASE_KEY_ALIAS: ${{ secrets.HIKARAOKE_RELEASE_KEY_ALIAS }}
-          HIKARAOKE_RELEASE_KEY_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_FILE: ${{ runner.temp }}/hikaraoke-release.jks
+          ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_STORE_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_KEY_ALIAS: ${{ secrets.HIKARAOKE_RELEASE_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_HIKARAOKE_RELEASE_KEY_PASSWORD: ${{ secrets.HIKARAOKE_RELEASE_KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
       - name: Upload APK artifact
