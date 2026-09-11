@@ -26,6 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -34,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 
 public class AccountActivity extends AppCompatActivity {
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/harbroi/HiKaraoke/releases/latest";
+    private static final String LATEST_RELEASE_REDIRECT_URL = "https://github.com/harbroi/HiKaraoke/releases/latest";
     private MaterialButton checkUpdatesButton;
 
     @Override
@@ -169,7 +171,32 @@ public class AccountActivity extends AppCompatActivity {
     }
 
     private ReleaseInfo fetchLatestRelease() throws Exception {
-        JSONObject releaseJson = fetchJsonObject(LATEST_RELEASE_URL);
+        try {
+            JSONObject releaseJson = fetchJsonObject(LATEST_RELEASE_URL);
+            return toReleaseInfo(releaseJson);
+        } catch (IOException exception) {
+            if (!isNotFoundForPrivateRepo(exception.getMessage())) {
+                throw exception;
+            }
+        }
+
+        String latestTag = resolveLatestReleaseTagFromRedirect();
+        long versionCode = parseVersionCodeFromTag(latestTag);
+        if (versionCode < 0L) {
+            throw new IllegalStateException("Latest release is missing a valid version code.");
+        }
+        String normalizedTag = latestTag.startsWith("v") || latestTag.startsWith("V")
+                ? latestTag.substring(1)
+                : latestTag;
+        String apkUrl = "https://github.com/harbroi/HiKaraoke/releases/download/"
+                + latestTag
+                + "/HIKaraoke_v"
+                + normalizedTag
+                + ".apk";
+        return new ReleaseInfo(versionCode, normalizedTag, apkUrl);
+    }
+
+    private ReleaseInfo toReleaseInfo(JSONObject releaseJson) {
         String tagName = releaseJson.optString("tag_name", "").trim();
         long versionCode = parseVersionCodeFromRelease(releaseJson, tagName);
         if (versionCode < 0L) {
@@ -222,9 +249,44 @@ public class AccountActivity extends AppCompatActivity {
 
             String responseBody = readStream(responseStream);
             if (responseCode < 200 || responseCode >= 300) {
-                throw new IllegalStateException("GitHub returned " + responseCode + ".");
+                throw new IOException("GitHub returned " + responseCode + ".");
             }
             return new JSONObject(responseBody);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private String resolveLatestReleaseTagFromRedirect() throws Exception {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(LATEST_RELEASE_REDIRECT_URL);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            connection.setRequestProperty("User-Agent", getPackageName());
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_MOVED_PERM
+                    && responseCode != HttpURLConnection.HTTP_MOVED_TEMP
+                    && responseCode != HttpURLConnection.HTTP_SEE_OTHER) {
+                throw new IllegalStateException("Unable to resolve latest release.");
+            }
+
+            String location = connection.getHeaderField("Location");
+            if (TextUtils.isEmpty(location)) {
+                throw new IllegalStateException("Latest release location is missing.");
+            }
+
+            int marker = location.lastIndexOf("/tag/");
+            if (marker < 0) {
+                throw new IllegalStateException("Latest release tag could not be resolved.");
+            }
+            return location.substring(marker + 5).trim();
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -290,6 +352,14 @@ public class AccountActivity extends AppCompatActivity {
             }
         }
         return computed;
+    }
+
+    private long parseVersionCodeFromTag(String tagName) {
+        return parseVersionCodeFromRelease(new JSONObject(), tagName);
+    }
+
+    private boolean isNotFoundForPrivateRepo(String message) {
+        return message != null && message.contains("404");
     }
 
     private String sanitizeFileName(String value) {
