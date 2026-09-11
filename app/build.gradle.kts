@@ -1,10 +1,9 @@
+import java.util.Locale
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
 }
-
-import com.android.build.api.variant.BuiltArtifactsLoader
-import java.util.Locale
 
 android {
     namespace = "net.harbroi.hikaraoke"
