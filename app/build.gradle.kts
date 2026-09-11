@@ -18,7 +18,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.2"
+        versionName = "1.2.1"
         buildConfigField("String", "YOUTUBE_API_KEY", "\"AIzaSyDOuyf7Xt1r5Csck5cCn7-VEiBw8fcbdmI\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
