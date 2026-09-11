@@ -1,17 +1,24 @@
 package net.harbroi.hikaraoke;
 
 import android.app.DownloadManager;
+import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
 
+import androidx.core.content.FileProvider;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -67,6 +74,7 @@ public class AppUpdateManager {
             return false;
         }
 
+        String apkFileName = "HIKaraoke_v" + sanitizeFileName(releaseInfo.versionName) + ".apk";
         Uri downloadUri = Uri.parse(releaseInfo.apkDownloadUrl);
         DownloadManager.Request request = new DownloadManager.Request(downloadUri)
                 .setTitle(context.getString(R.string.app_name) + " " + releaseInfo.versionName)
@@ -75,17 +83,66 @@ public class AppUpdateManager {
                 .setMimeType("application/vnd.android.package-archive")
                 .setDestinationInExternalPublicDir(
                         Environment.DIRECTORY_DOWNLOADS,
-                        "HIKaraoke_v" + sanitizeFileName(releaseInfo.versionName) + ".apk"
+                        apkFileName
                 )
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true);
         request.addRequestHeader("Accept", "application/octet-stream");
 
         try {
-            downloadManager.enqueue(request);
+            long downloadId = downloadManager.enqueue(request);
+            registerInstallReceiver(context, downloadId, apkFileName);
             return true;
         } catch (RuntimeException exception) {
             return false;
+        }
+    }
+
+    private void registerInstallReceiver(Context context, long downloadId, String apkFileName) {
+        Context appContext = context.getApplicationContext();
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context receiverContext, Intent intent) {
+                long completedDownloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L);
+                if (completedDownloadId != downloadId) {
+                    return;
+                }
+                try {
+                    appContext.unregisterReceiver(this);
+                } catch (IllegalArgumentException ignored) {
+                }
+                triggerApkInstall(appContext, apkFileName);
+            }
+        };
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            appContext.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            appContext.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }
+    }
+
+    private void triggerApkInstall(Context context, String apkFileName) {
+        File apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), apkFileName);
+        if (!apkFile.exists()) {
+            return;
+        }
+
+        Uri apkUri = FileProvider.getUriForFile(
+                context,
+                context.getPackageName() + ".fileprovider",
+                apkFile
+        );
+
+        Intent installIntent = new Intent(Intent.ACTION_VIEW);
+        installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+        installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        installIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+        try {
+            context.startActivity(installIntent);
+        } catch (ActivityNotFoundException ignored) {
         }
     }
 
