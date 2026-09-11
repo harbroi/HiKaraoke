@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -62,7 +63,7 @@ jobs:
           fi
 
       - name: Require release signing secrets
-        if: github.event_name != 'workflow_dispatch' && steps.signing.outputs.available != 'true'
+        if: github.event_name == 'pull_request' && steps.signing.outputs.available != 'true'
         shell: bash
         run: |
           echo "Release signing secrets are required to build an installable release APK." >&2
@@ -107,7 +108,7 @@ jobs:
           path: app/build/outputs/apk/release/${{ steps.app_version.outputs.apk_name }}
 
       - name: Create or update release
-        if: github.event.pull_request.merged == true
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
