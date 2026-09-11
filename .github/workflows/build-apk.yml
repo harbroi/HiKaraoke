@@ -62,13 +62,6 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Require release signing secrets
-        if: github.event_name == 'pull_request' && steps.signing.outputs.available != 'true'
-        shell: bash
-        run: |
-          echo "Release signing secrets are required to build an installable release APK." >&2
-          exit 1
-
       - name: Decode release keystore
         if: steps.signing.outputs.available == 'true'
         shell: bash
@@ -108,7 +101,7 @@ jobs:
           path: app/build/outputs/apk/release/${{ steps.app_version.outputs.apk_name }}
 
       - name: Create or update release
-        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && steps.signing.outputs.available == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -121,3 +114,9 @@ jobs:
             "app/build/outputs/apk/release/${{ steps.app_version.outputs.apk_name }}" \
             --title "HIKaraoke v${{ steps.app_version.outputs.version_name }}" \
             --notes "Automated release for version ${{ steps.app_version.outputs.version_name }} (versionCode ${{ steps.app_version.outputs.version_code }})."
+
+      - name: Report skipped signed release
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && steps.signing.outputs.available != 'true'
+        shell: bash
+        run: |
+          echo "Release signing secrets are missing, so the signed release APK and GitHub Release were skipped."
