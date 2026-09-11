@@ -143,7 +143,7 @@ public class AppUpdateManager {
         if (versionName.isEmpty()) {
             versionName = tagName;
         }
-        return new ReleaseInfo(versionCode, versionName, apkUrl);
+        return new ReleaseInfo(versionCode, normalizeVersion(versionName), apkUrl);
     }
 
     private JSONObject fetchJsonObject(String urlString, Context context) throws Exception {
@@ -298,6 +298,9 @@ public class AppUpdateManager {
             return "0";
         }
         String trimmed = version.trim();
+        if (trimmed.regionMatches(true, 0, "HIKaraoke", 0, "HIKaraoke".length())) {
+            trimmed = trimmed.substring("HIKaraoke".length()).trim();
+        }
         if (trimmed.startsWith("v") || trimmed.startsWith("V")) {
             trimmed = trimmed.substring(1);
         }
