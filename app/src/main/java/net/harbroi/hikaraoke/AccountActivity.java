@@ -110,8 +110,8 @@ public class AccountActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 ReleaseInfo releaseInfo = fetchLatestRelease();
-                long installedVersionCode = getInstalledVersionCode();
-                if (releaseInfo.versionCode <= installedVersionCode) {
+                String installedVersionName = getInstalledVersionName();
+                if (compareSemanticVersions(releaseInfo.versionName, installedVersionName) <= 0) {
                     runOnUiThread(() -> {
                         setUpdateButtonEnabled(true, getString(R.string.check_updates));
                         Toast.makeText(this, R.string.update_not_available, Toast.LENGTH_SHORT).show();
@@ -321,6 +321,20 @@ public class AccountActivity extends AppCompatActivity {
         return packageInfo.versionCode;
     }
 
+    private String getInstalledVersionName() throws Exception {
+        PackageInfo packageInfo;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageInfo = getPackageManager().getPackageInfo(
+                    getPackageName(),
+                    android.content.pm.PackageManager.PackageInfoFlags.of(0)
+            );
+        } else {
+            packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+        }
+        String versionName = packageInfo.versionName;
+        return versionName == null ? "0" : versionName;
+    }
+
     private long parseVersionCodeFromRelease(JSONObject releaseJson, String tagName) {
         String body = releaseJson.optString("body", "");
         java.util.regex.Matcher matcher = java.util.regex.Pattern
@@ -360,6 +374,39 @@ public class AccountActivity extends AppCompatActivity {
 
     private boolean isNotFoundForPrivateRepo(String message) {
         return message != null && message.contains("404");
+    }
+
+    private int compareSemanticVersions(String left, String right) {
+        String[] leftParts = normalizeVersion(left).split("\\.");
+        String[] rightParts = normalizeVersion(right).split("\\.");
+        int partCount = Math.max(leftParts.length, rightParts.length);
+        for (int i = 0; i < partCount; i++) {
+            int leftValue = i < leftParts.length ? parseVersionPart(leftParts[i]) : 0;
+            int rightValue = i < rightParts.length ? parseVersionPart(rightParts[i]) : 0;
+            if (leftValue != rightValue) {
+                return Integer.compare(leftValue, rightValue);
+            }
+        }
+        return 0;
+    }
+
+    private String normalizeVersion(String version) {
+        if (version == null) {
+            return "0";
+        }
+        String trimmed = version.trim();
+        if (trimmed.startsWith("v") || trimmed.startsWith("V")) {
+            trimmed = trimmed.substring(1);
+        }
+        return trimmed.isEmpty() ? "0" : trimmed;
+    }
+
+    private int parseVersionPart(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
     }
 
     private String sanitizeFileName(String value) {
