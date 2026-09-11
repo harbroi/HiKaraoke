@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "547993256794-a55g9ecbr33bpbb3gdfsj7k7d68bj6sk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "net.harbroi.hikaraoke",
+            "certificate_hash": "2903f4ca4b174864be2a50b5107d36c1960e769c"
+          }
+        },
+        {
           "client_id": "547993256794-i003pd8auelspiqdki2pcletfqs9de8i.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
