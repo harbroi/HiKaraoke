@@ -43,6 +43,15 @@
     <string name="account_name_content_description">Current user name</string>
     <string name="account_access_code_value">TV Code: %1$s</string>
     <string name="account_access_code_error">TV code unavailable</string>
+    <string name="scan_tv_qr">Scan TV QR Code</string>
+    <string name="tv_qr_invalid">The scanned QR code is not a valid TV pairing code.</string>
+    <string name="tv_qr_connected">TV connected to your account.</string>
+    <string name="tv_qr_failed">Unable to connect this TV.</string>
+    <string name="tv_qr_scan_failed">Unable to scan QR code: %1$s</string>
+    <string name="tv_pairing_qr_description">QR code to connect this TV to a mobile account</string>
+    <string name="tv_pairing_loading">Preparing QR code...</string>
+    <string name="tv_pairing_scan_hint">Scan with the signed-in mobile app to connect</string>
+    <string name="tv_pairing_unavailable">QR pairing is unavailable. Enter your TV code below.</string>
     <string name="account_app_info_value">App: %1$s\nVersion: %2$s\nDeveloper: %3$s</string>
     <string name="check_updates">Check Updates</string>
     <string name="checking_updates">Checking for updates...</string>

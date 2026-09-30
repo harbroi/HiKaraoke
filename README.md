@@ -16,6 +16,7 @@ The app uses **Google Sign-In**, **Firebase Authentication**, and **Firebase Rea
 - **Remove individual songs** with long press
 - **Clear the full queue**
 - **TV access code** shown in the account screen for linking a TV
+- **QR pairing** from the TV screen using the signed-in mobile account
 - **Bottom navigation** for queue, search, and account screens
 - **Firebase offline persistence** for better resilience
 
@@ -24,6 +25,7 @@ The app uses **Google Sign-In**, **Firebase Authentication**, and **Firebase Rea
 - **Automatic TV mode detection** on Android TV / Leanback devices
 - **Manual TV mode entry** from the mode chooser on non-TV devices
 - **8-character access code linking** to open a user's queue on TV
+- **QR code pairing** as an alternative to entering the access code
 - **Full-screen YouTube playback**
 - **Live queue syncing** while songs are added from mobile
 - **Auto-play next song** when the current video ends
@@ -37,8 +39,9 @@ The app uses **Google Sign-In**, **Firebase Authentication**, and **Firebase Rea
 1. On **mobile**, the user signs in with Google.
 2. The user searches for karaoke videos and adds songs to a personal queue.
 3. HIKaraoke generates or loads an **8-character TV code** for that account.
-4. On **TV**, the user enters the code to connect to the same Firebase-backed queue.
-5. The TV player keeps listening for queue updates and plays songs in order.
+4. On **TV**, the user enters the code or scans the TV's QR code from the mobile Account screen.
+5. QR pairing uses a one-time random token to associate the signed-in mobile user's Firebase UID with the TV session.
+6. The TV player keeps listening for queue updates and plays songs in order.
 
 ## Tech stack
 
@@ -81,3 +84,4 @@ This repository includes a workflow at **`.github/workflows/build-apk.yml`** tha
 
 - The project supports both **phone/tablet** and **Android TV** usage.
 - The TV flow depends on the mobile user's Firebase queue and access code.
+- Deploy the Firebase Realtime Database rules in `database.rules.json` with `firebase deploy --only database`. They allow TV reads of pairing sessions and let a signed-in mobile user claim an unused session only for their own UID.

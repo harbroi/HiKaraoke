@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -19,6 +22,7 @@ import com.google.firebase.auth.FirebaseUser;
 public class AccountActivity extends AppCompatActivity {
     private final AppUpdateManager appUpdateManager = new AppUpdateManager();
     private MaterialButton checkUpdatesButton;
+    private MaterialButton scanTvQrButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +34,7 @@ public class AccountActivity extends AppCompatActivity {
         TextView appInfoText = findViewById(R.id.appInfoText);
         TextView signOutButton = findViewById(R.id.signOutButton);
         checkUpdatesButton = findViewById(R.id.checkUpdatesButton);
+        scanTvQrButton = findViewById(R.id.scanTvQrButton);
         BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
 
         userNameText.setText(getCurrentUserName());
@@ -46,8 +51,54 @@ public class AccountActivity extends AppCompatActivity {
             accessCodeText.setText(getString(R.string.account_access_code_value, accessCode));
         });
         signOutButton.setOnClickListener(v -> signOut());
+        scanTvQrButton.setOnClickListener(v -> scanTvQrCode());
         checkUpdatesButton.setOnClickListener(v -> checkForUpdates());
         NavigationHelper.setupBottomNavigation(this, bottomNavigation, R.id.navigation_account);
+    }
+
+    private void scanTvQrCode() {
+        GmsBarcodeScannerOptions options = new GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build();
+        setScanButtonEnabled(false);
+        GmsBarcodeScanning.getClient(this, options).startScan()
+                .addOnSuccessListener(barcode -> {
+                    String token = barcode.getRawValue();
+                    if (token == null || token.isEmpty()) {
+                        setScanButtonEnabled(true);
+                        Toast.makeText(this, R.string.tv_qr_invalid, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    FirebaseManager.getInstance().linkTvPairingSession(token, (linked, errorMessage) -> runOnUiThread(() -> {
+                        setScanButtonEnabled(true);
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        if (linked) {
+                            Toast.makeText(this, R.string.tv_qr_connected, Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(this,
+                                    errorMessage == null ? getString(R.string.tv_qr_failed) : errorMessage,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }));
+                })
+                .addOnCanceledListener(() -> setScanButtonEnabled(true))
+                .addOnFailureListener(exception -> {
+                    setScanButtonEnabled(true);
+                    String reason = exception.getLocalizedMessage();
+                    Toast.makeText(this,
+                            getString(R.string.tv_qr_scan_failed, reason == null ? getString(R.string.tv_qr_failed) : reason),
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void setScanButtonEnabled(boolean enabled) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        scanTvQrButton.setEnabled(enabled);
+        scanTvQrButton.setAlpha(enabled ? 1f : 0.6f);
     }
 
     private String getAppVersionName() {

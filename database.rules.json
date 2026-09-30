@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "accessCode": {
+          ".read": true
+        },
+        "videoQueue": {
+          ".read": true,
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    },
+    "publicAccessCodes": {
+      ".read": true,
+      "$code": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('accessCode').val() === $code"
+      }
+    },
+    "tvPairingSessions": {
+      "$token": {
+        ".read": true,
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid",
+        ".validate": "$token.matches(/^[a-fA-F0-9]{32}$/)"
+      }
+    }
+  }
+}
