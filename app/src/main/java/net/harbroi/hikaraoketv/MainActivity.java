@@ -5,10 +5,14 @@ import android.app.UiModeManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +21,20 @@ import net.harbroi.hikaraoke.FirebaseManager;
 import net.harbroi.hikaraoke.R;
 import net.harbroi.hikaraoke.AppUpdateManager;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
+import java.util.EnumMap;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -24,6 +42,12 @@ public class MainActivity extends AppCompatActivity {
     private final AppUpdateManager appUpdateManager = new AppUpdateManager();
     private Button openQueueButton;
     private EditText codeInput;
+    private ImageView pairingQrImage;
+    private TextView pairingHint;
+    private String pairingToken;
+    private DatabaseReference pairingSessionRef;
+    private ValueEventListener pairingListener;
+    private boolean playerOpened;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +60,69 @@ public class MainActivity extends AppCompatActivity {
                 new android.text.InputFilter.LengthFilter(8)
         });
         openQueueButton = findViewById(R.id.openQueueButton);
+        pairingQrImage = findViewById(R.id.tvPairingQrCode);
+        pairingHint = findViewById(R.id.tvPairingHint);
+        startTvPairingSession();
 
         openQueueButton.setOnClickListener(v -> {
             checkForUpdatesBeforeConnecting();
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (pairingSessionRef != null && pairingListener != null) {
+            pairingSessionRef.removeEventListener(pairingListener);
+        }
+        super.onDestroy();
+    }
+
+    private void startTvPairingSession() {
+        FirebaseManager firebaseManager = FirebaseManager.getInstance();
+        pairingToken = firebaseManager.createTvPairingToken();
+        pairingSessionRef = firebaseManager.getTvPairingSessionRef(pairingToken);
+        pairingListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                String userUid = snapshot.getValue(String.class);
+                if (userUid == null || playerOpened) {
+                    return;
+                }
+                openPlayer(userUid);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                Log.e(TAG, "Unable to listen for TV pairing", error.toException());
+                if (!isFinishing() && !isDestroyed()) {
+                    pairingHint.setText(R.string.tv_pairing_unavailable);
+                }
+            }
+        };
+        pairingSessionRef.addValueEventListener(pairingListener);
+        try {
+            pairingQrImage.setImageBitmap(createQrBitmap(pairingToken));
+            pairingHint.setText(R.string.tv_pairing_scan_hint);
+        } catch (WriterException exception) {
+            Log.e(TAG, "Unable to generate TV pairing QR code", exception);
+            pairingHint.setText(R.string.tv_pairing_unavailable);
+        }
+    }
+
+    private Bitmap createQrBitmap(String content) throws WriterException {
+        int size = 480;
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+        BitMatrix matrix = new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, size, size, hints);
+        int[] pixels = new int[size * size];
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                pixels[y * size + x] = matrix.get(x, y) ? Color.BLACK : Color.WHITE;
+            }
+        }
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, size, 0, 0, size, size);
+        return bitmap;
     }
 
     private void checkForUpdatesBeforeConnecting() {
@@ -90,6 +173,9 @@ public class MainActivity extends AppCompatActivity {
             openQueueButton.setEnabled(false);
             FirebaseManager.getInstance().lookupUserByAccessCode(code, (userUid, resolvedCode, errorMessage) -> {
                 openQueueButton.setEnabled(true);
+                if (playerOpened) {
+                    return;
+                }
                 if (errorMessage != null) {
                     Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
                     return;
@@ -145,12 +231,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openPlayer(String userUid) {
+        if (playerOpened) {
+            return;
+        }
+        playerOpened = true;
         try {
             Intent intent = new Intent(this, VideoPlayerWebViewActivity.class);
             intent.putExtra(EXTRA_USER_UID, userUid);
             startActivity(intent);
             finish();
         } catch (RuntimeException e) {
+            playerOpened = false;
             Log.e(TAG, "Failed to launch player activity", e);
             Toast.makeText(this,
                     "Unable to open player. Check Logcat for details.",

@@ -31,6 +31,25 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
+        <ImageView
+            android:id="@+id/tvPairingQrCode"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:background="@color/white"
+            android:contentDescription="@string/tv_pairing_qr_description"
+            android:padding="6dp" />
+
+        <TextView
+            android:id="@+id/tvPairingHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:gravity="center"
+            android:text="@string/tv_pairing_loading"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+
         <EditText
             android:id="@+id/tvCodeInput"
             android:layout_width="360dp"

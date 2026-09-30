@@ -18,12 +18,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.UUID;
 
 public class FirebaseManager {
     private static final String USERS_PATH = "users";
     private static final String QUEUE_PATH = "videoQueue";
     private static final String ACCESS_CODE_PATH = "accessCode";
     private static final String PUBLIC_ACCESS_CODES_PATH = "publicAccessCodes";
+    private static final String TV_PAIRING_SESSIONS_PATH = "tvPairingSessions";
     private static final int ACCESS_CODE_LENGTH = 8;
     private static final String ACCESS_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static FirebaseManager instance;
@@ -227,6 +229,59 @@ public class FirebaseManager {
                 });
     }
 
+    @NonNull
+    public String createTvPairingToken() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    @NonNull
+    public DatabaseReference getTvPairingSessionRef(@NonNull String token) {
+        if (!isValidTvPairingToken(token)) {
+            throw new IllegalArgumentException("Invalid TV pairing token.");
+        }
+        return database.getReference(TV_PAIRING_SESSIONS_PATH).child(token);
+    }
+
+    public void linkTvPairingSession(@NonNull String token, @NonNull TvPairingCallback callback) {
+        if (!isValidTvPairingToken(token)) {
+            callback.onComplete(false, "Invalid TV QR code.");
+            return;
+        }
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            callback.onComplete(false, "Sign in before scanning a TV QR code.");
+            return;
+        }
+
+        String userUid = currentUser.getUid();
+        getTvPairingSessionRef(token).runTransaction(new Transaction.Handler() {
+            @NonNull
+            @Override
+            public Transaction.Result doTransaction(@NonNull MutableData currentData) {
+                if (currentData.getValue() != null) {
+                    return Transaction.abort();
+                }
+                currentData.setValue(userUid);
+                return Transaction.success(currentData);
+            }
+
+            @Override
+            public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {
+                if (error != null) {
+                    callback.onComplete(false, error.getMessage());
+                } else if (!committed) {
+                    callback.onComplete(false, "This TV QR code is no longer active.");
+                } else {
+                    callback.onComplete(true, null);
+                }
+            }
+        });
+    }
+
+    private boolean isValidTvPairingToken(@Nullable String token) {
+        return token != null && token.matches("^[a-fA-F0-9]{32}$");
+    }
+
     @Nullable
     public String normalizeAccessCode(@Nullable String accessCode) {
         if (accessCode == null) {
@@ -320,6 +375,10 @@ public class FirebaseManager {
 
     public interface UserLookupCallback {
         void onUserFound(@Nullable String userUid, @Nullable String accessCode, @Nullable String errorMessage);
+    }
+
+    public interface TvPairingCallback {
+        void onComplete(boolean linked, @Nullable String errorMessage);
     }
 
     private static class QueueEntry {

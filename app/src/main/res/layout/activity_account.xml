@@ -79,6 +79,17 @@
             android:textSize="26sp"
             android:textStyle="bold" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/scanTvQrButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/scan_tv_qr"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            app:backgroundTint="@color/logo_cyan"
+            app:cornerRadius="16dp" />
+
         <TextView
             android:id="@+id/signOutButton"
             android:layout_width="wrap_content"
